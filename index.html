@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spieleentwicklung</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .progress-bar {
+            background: rgba(255,255,255,0.2);
+            height: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: #ffd700;
+            height: 100%;
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 5px;
+        }
+
+        .content {
+            display: flex;
+            min-height: 600px;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: #f8f9fa;
+            padding: 20px;
+            border-right: 2px solid #e9ecef;
+        }
+
+        .step-list {
+            list-style: none;
+        }
+
+        .step-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+
+        .step-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .step-item.active {
+            border-left-color: #667eea;
+            background: #e7f3ff;
+            font-weight: bold;
+        }
+
+        .step-item.completed {
+            border-left-color: #28a745;
+        }
+
+        .step-item.completed::before {
+            content: "✓ ";
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+            max-height: 800px;
+        }
+
+        .step-content {
+            display: none;
+        }
+
+        .step-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .step-content h2 {
+            color: #667eea;
+            font-size: 2em;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .step-content h3 {
+            color: #764ba2;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .step-content p {
+            line-height: 1.8;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+
+        .step-content ul, .step-content ol {
+            margin-left: 30px;
+            margin-bottom: 20px;
+            line-height: 2;
+        }
+
+        .step-content li {
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .code-example {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+
+        .code-example .keyword { color: #c678dd; }
+        .code-example .string { color: #98c379; }
+        .code-example .function { color: #61afef; }
+        .code-example .comment { color: #5c6370; }
+
+        /* ============================================================
+           Pseudocode-Blöcke (kindgerechte Anweisungs-Karten, Scratch-Stil)
+           ============================================================ */
+        .pseudo-code {
+            background: #f0f4ff;
+            border-radius: 14px;
+            padding: 18px 22px;
+            margin: 20px 0;
+            box-shadow: 0 2px 14px rgba(100, 110, 234, 0.13);
+            border: 2px solid #dce4ff;
+        }
+
+        .pseudo-code-label {
+            font-size: 0.78em;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #8892b0;
+            margin-bottom: 12px;
+        }
+
+        .pseudo-block {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 11px 16px;
+            border-radius: 10px;
+            margin: 6px 0;
+            font-size: 1.05em;
+            font-weight: 700;
+            line-height: 1.4;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .pseudo-block .block-icon {
+            flex-shrink: 0;
+            font-size: 1.15em;
+            margin-top: 1px;
+        }
+
+        .pseudo-block .block-text {
+            flex: 1;
+        }
+
+        .pseudo-block .block-param {
+            display: block;
+            font-weight: 400;
+            font-size: 0.88em;
+            color: rgba(0, 0, 0, 0.5);
+            margin-top: 3px;
+        }
+
+        .block-start  { background: #c8f5c8; color: #1b5e20; border-left: 5px solid #388e3c; }
+        .block-event  { background: #fff3cd; color: #704500; border-left: 5px solid #f9a825; }
+        .block-action { background: #daeeff; color: #0d3d7a; border-left: 5px solid #1565c0; }
+        .block-set    { background: #ffe8cc; color: #6b3000; border-left: 5px solid #e65100; }
+        .block-check  { background: #e0f7fa; color: #004a57; border-left: 5px solid #00838f; }
+
+        .block-indent {
+            margin-left: 32px;
+            padding-left: 10px;
+            border-left: 3px dashed #c5ccde;
+            margin-top: 4px;
+            margin-bottom: 4px;
+        }
+
+        .profi-tipp {
+            margin-top: 14px;
+        }
+
+        .profi-tipp > summary {
+            cursor: pointer;
+            font-size: 0.88em;
+            color: #5d3a8a;
+            font-weight: 700;
+            padding: 7px 14px;
+            background: #f3e8ff;
+            border-radius: 8px;
+            display: inline-block;
+            user-select: none;
+            list-style: none;
+        }
+
+        .profi-tipp > summary::before { content: "▶ "; font-size: 0.75em; }
+        .profi-tipp[open] > summary::before { content: "▼ "; }
+
+        .profi-tipp > summary:hover {
+            background: #e9d5ff;
+        }
+
+        .profi-tipp > .code-example {
+            margin-top: 10px;
+            font-size: 0.83em;
+            border-radius: 8px;
+        }
+
+        .game-canvas-container {
+            background: #000;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        #gameCanvas {
+            background: #1a1a2e;
+            border: 2px solid #667eea;
+            border-radius: 5px;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1em;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px 5px;
+            font-weight: bold;
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .button.secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .button.success {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .success-box {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .presentation-template {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .presentation-template h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .presentation-template textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 15px;
+            border: 2px solid #667eea;
+            border-radius: 5px;
+            font-size: 1.1em;
+            font-family: inherit;
+            margin-bottom: 15px;
+        }
+
+        .navigation-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #e9ecef;
+        }
+
+        .highlight {
+            background: #fff3cd;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+
+        /* Virtuelle Steuerungstasten für Touch-Geräte */
+        .virtual-controls {
+            display: none;
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            user-select: none;
+            pointer-events: none;
+        }
+
+        .virtual-controls.active {
+            display: block;
+            pointer-events: all;
+        }
+
+        .control-pad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 12px;
+            width: 220px;
+            height: 220px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .control-btn {
+            background: rgba(102, 126, 234, 0.9);
+            color: white;
+            border: 3px solid white;
+            border-radius: 18px;
+            font-size: 2.2em;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: none;
+            user-select: none;
+            transition: all 0.1s;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            min-width: 60px;
+            min-height: 60px;
+        }
+
+        .control-btn:active,
+        .control-btn.touching {
+            background: rgba(102, 126, 234, 1);
+            transform: scale(0.85);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .control-btn.up { grid-column: 2; grid-row: 1; }
+        .control-btn.down { grid-column: 2; grid-row: 3; }
+        .control-btn.left { grid-column: 1; grid-row: 2; }
+        .control-btn.right { grid-column: 3; grid-row: 2; }
+
+        .control-btn.space {
+            grid-column: 1 / 4;
+            grid-row: 4;
+            font-size: 1.2em;
+            padding: 10px;
+        }
+
+        /* iPad-Optimierung */
+        @media (max-width: 1024px) and (min-width: 768px) {
+            .container {
+                max-width: 95%;
+                margin: 10px auto;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .content {
+                flex-direction: row;
+            }
+            
+            .sidebar {
+                width: 250px;
+                padding: 15px;
+            }
+            
+            .main-content {
+                padding: 30px;
+                max-height: calc(100vh - 200px);
+            }
+            
+            .step-content h2 {
+                font-size: 1.8em;
+            }
+            
+            .step-content h3 {
+                font-size: 1.3em;
+            }
+            
+            .game-canvas-container {
+                padding: 15px;
+            }
+            
+            #gameCanvas, #playerCanvas, #movementCanvas, #collectibleCanvas, #fullGameCanvas {
+                max-width: 100%;
+                height: auto;
+            }
+            
+            .virtual-controls {
+                display: block;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+            }
+            
+            .virtual-controls {
+                display: block;
+            }
+        }
+
+        /* ===== Werkstatt, Aufgaben, Präsentation (Ergänzung 2026) ===== */
+        .werkstatt {
+            background: #f5f3ff;
+            border: 2px solid #ddd6fe;
+            border-radius: 14px;
+            padding: 16px 20px;
+            margin: 16px 0;
+        }
+        .werkstatt h3 { margin-top: 0 !important; }
+        .regler { display: grid; grid-template-columns: 1fr; gap: 12px; }
+        @media (min-width: 900px) { .regler { grid-template-columns: 1fr 1fr; } }
+        .regler label { display: block; font-weight: 700; margin-bottom: 4px; }
+        .regler input[type=range] { width: 100%; height: 36px; accent-color: #667eea; }
+        .regler .wert { color: #667eea; font-weight: 800; }
+        .schalter { display: flex; align-items: center; gap: 10px; font-weight: 700; min-height: 44px; cursor: pointer; }
+        .schalter input { width: 24px; height: 24px; accent-color: #667eea; }
+        .farben { display: flex; gap: 8px; flex-wrap: wrap; }
+        .farbe { width: 44px; height: 44px; border-radius: 10px; border: 3px solid transparent; cursor: pointer; }
+        .farbe.sel { border-color: #333; }
+        .mission {
+            background: #fff7ed;
+            border-left: 4px solid #f97316;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .mission h3 { color: #c2410c !important; margin-top: 0 !important; }
+        .mc-opt {
+            display: block; width: 100%; text-align: left; margin: 8px 0 0; padding: 12px 14px;
+            border-radius: 10px; border: 2px solid #e5e7eb; background: white; font: inherit; font-size: 1.02em;
+            cursor: pointer; min-height: 48px;
+        }
+        .mc-opt.richtig { border-color: #28a745; background: #d4edda; }
+        .mc-opt.falsch { border-color: #dc3545; background: #f8d7da; }
+        .mc-fb { margin-top: 10px; font-weight: 600; line-height: 1.6; }
+        .rueckmeldung { margin-top: 10px; font-weight: 700; min-height: 1.4em; }
+        .rueckmeldung.ok { color: #1e7e34; }
+        .rueckmeldung.nein { color: #b02a37; }
+        .hud-zeile { color: #ddd; margin-top: 10px; font-weight: 700; }
+        .mechanik { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin: 15px 0; }
+        .mechanik div { background: #f8f9fa; border-radius: 10px; padding: 12px 14px; border-left: 4px solid #764ba2; line-height: 1.5; }
+
+        /* Folien-Werkstatt: Notizen nur als Hilfe am Rand */
+        .folie {
+            display: grid; grid-template-columns: 1fr; gap: 14px;
+            background: white; border: 2px solid #e9ecef; border-radius: 14px;
+            padding: 18px 20px; margin: 18px 0;
+        }
+        @media (min-width: 900px) { .folie { grid-template-columns: 1fr 240px; } }
+        .folie-kopf { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+        .folie-nr { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border-radius: 8px; padding: 4px 10px; font-weight: 800; font-size: .9em; }
+        .folie h3 { margin: 0 !important; }
+        .teilschritt { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-bottom: 1px dashed #e5e7eb; cursor: pointer; line-height: 1.5; font-size: 1.05em; }
+        .teilschritt:last-of-type { border-bottom: 0; }
+        .teilschritt input { width: 22px; height: 22px; margin-top: 3px; flex-shrink: 0; accent-color: #28a745; }
+        .teilschritt.erledigt span { color: #6c757d; text-decoration: line-through; }
+        .satzanfang { display: inline-block; background: #fff3cd; border-radius: 6px; padding: 1px 6px; font-style: italic; }
+        .beispiel { background: #f0f4ff; border-radius: 10px; padding: 10px 12px; margin-top: 10px; font-size: .97em; line-height: 1.6; }
+        .beispiel b { color: #667eea; }
+        .notiz { background: #fffdf2; border: 1px dashed #e0c86a; border-radius: 10px; padding: 10px; align-self: start; }
+        .notiz label { display: block; font-size: .85em; font-weight: 700; color: #8a6d00; margin-bottom: 6px; }
+        .notiz textarea { width: 100%; min-height: 120px; border: 0; background: transparent; font: inherit; font-size: .95em; resize: vertical; outline: none; }
+        .raster { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: .97em; }
+        .raster th, .raster td { border: 1px solid #dee2e6; padding: 10px; vertical-align: top; text-align: left; line-height: 1.5; }
+        .raster th { background: #f0f4ff; color: #4c3a8a; }
+        .raster td:first-child { font-weight: 700; width: 24%; }
+        @media print {
+            body { background: white; padding: 0; }
+            .sidebar, .header, .navigation-buttons, .virtual-controls { display: none !important; }
+            .step-content { display: none !important; }
+            .step-content.active { display: block !important; }
+            .main-content { max-height: none; overflow: visible; }
+        }
+
+        /* ===== iPad quer (1180 × 820) und größer: alles passt in den Bildschirm ===== */
+        @media (min-width: 1025px) {
+            body { padding: 12px; height: 100vh; height: 100dvh; overflow: hidden; }
+            .container { max-width: none; height: calc(100vh - 24px); height: calc(100dvh - 24px); display: flex; flex-direction: column; }
+            .header { padding: 12px 24px; display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 20px; text-align: left; }
+            .header h1 { font-size: 1.6em; margin: 0; }
+            .header p { font-size: 1em; }
+            .progress-bar { grid-column: 1 / -1; margin-top: 10px; height: 8px; }
+            .content { flex: 1; min-height: 0; }
+            .sidebar { width: 290px; padding: 12px 14px; overflow-y: auto; }
+            .step-item { padding: 9px 14px; margin-bottom: 6px; font-size: .95em; }
+            .main-content { max-height: none; overflow-y: auto; padding: 26px 36px 40px; }
+            .step-content h2 { font-size: 1.8em; }
+            /* Steuerkreuz unten in der Seitenleiste statt über dem Text */
+            .virtual-controls { left: 157px; bottom: 22px; transform: translateX(-50%); }
+            .control-pad { width: 180px; height: 180px; gap: 8px; padding: 10px; }
+            .control-btn { min-width: 48px; min-height: 48px; font-size: 1.7em; border-radius: 14px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎮 Spieleentwicklung</h1>
+            <p>Wie Computerspiele funktionieren – und wie du dein eigenes Spiel entwirfst</p>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="sidebar">
+                <ul class="step-list" id="stepList">
+                    <li class="step-item active" data-step="0">Schritt 1: Start</li>
+                    <li class="step-item" data-step="1">Schritt 2: Was ist ein Spiel?</li>
+                    <li class="step-item" data-step="2">Schritt 3: Unser Spielprojekt</li>
+                    <li class="step-item" data-step="3">Schritt 4: Die Spielfigur</li>
+                    <li class="step-item" data-step="4">Schritt 5: Bewegung</li>
+                    <li class="step-item" data-step="5">Schritt 6: Sammeln</li>
+                    <li class="step-item" data-step="6">Schritt 7: Punkte & Regeln</li>
+                    <li class="step-item" data-step="7">Schritt 8: Warum Spiele fesseln</li>
+                    <li class="step-item" data-step="8">Schritt 9: Präsentation bauen</li>
+                    <li class="step-item" data-step="9">Schritt 10: Präsentieren</li>
+                </ul>
+            </div>
+
+            <div class="main-content">
+                <!-- Schritt 1: Start -->
+                <div class="step-content active" data-step="0">
+                    <h2>🎮 Wie entsteht ein Spiel?</h2>
+                    <p>Hinter jedem Spiel – von Minecraft bis Brawl Stars – stecken dieselben Grundbausteine: eine Figur, Regeln, ein Ziel und ein Programm, das alles 60-mal pro Sekunde neu berechnet. In dieser Einheit nimmst du ein kleines Spiel auseinander, veränderst es selbst und entwirfst danach dein eigenes.</p>
+
+                    <div class="info-box">
+                        <h3>📚 So läuft die Einheit</h3>
+                        <ul>
+                            <li>🧱 <strong>Schritt 2–3:</strong> Was ein Spiel ausmacht und wie ein Computer es berechnet</li>
+                            <li>🔧 <strong>Schritt 4–7 – Werkstatt:</strong> Du veränderst ein echtes Spiel mit Reglern und findest heraus, was im Code passiert</li>
+                            <li>🧲 <strong>Schritt 8:</strong> Mit welchen Tricks Spiele dich festhalten – und was davon fair ist</li>
+                            <li>🎤 <strong>Schritt 9–10:</strong> Du baust in Keynote die Präsentation deines eigenen Spiels und stellst sie vor (wird benotet)</li>
+                        </ul>
+                    </div>
+
+                    <div class="success-box">
+                        <p>👥 <strong>Arbeitsformen:</strong> In der Werkstatt arbeitest du allein, vergleichst aber in Schritt 7 mit einem Partner. In Schritt 9 prüft ein Partner deine Folien, bevor du präsentierst. Dein Fortschritt wird auf diesem iPad gespeichert.</p>
+                    </div>
+
+                    <div class="navigation-buttons">
+                        <div></div>
+                        <button class="button" onclick="nextStep()">Weiter zu Schritt 2 →</button>
+                    </div>
+                </div>
+
+                <!-- Schritt 2: Was ist ein Spiel? -->
+                <div class="step-content" data-step="1">
+                    <h2>🎮 Was macht ein Computerspiel aus?</h2>
+
+                    <h3>🧱 Die fünf Grundbausteine</h3>
+                    <ol>
+                        <li>🦸 <strong>Spielfigur:</strong> das, was du steuerst</li>
+                        <li>🏁 <strong>Ziel:</strong> Was willst du erreichen? (Punkte sammeln, ein Level schaffen, überleben …)</li>
+                        <li>📜 <strong>Regeln:</strong> Was darfst du? Was passiert, wenn …?</li>
+                        <li>🎨 <strong>Grafik:</strong> alles, was du auf dem Bildschirm siehst</li>
+                        <li>👆 <strong>Interaktion:</strong> Du kannst etwas tun – Tasten drücken, tippen, wischen</li>
+                    </ol>
+
+                    <div class="mission">
+                        <h3>🔎 Kurz testen</h3>
+                        <div id="mc-bausteine"></div>
+                    </div>
+
+                    <h3>💻 Wie berechnet der Computer ein Spiel?</h3>
+                    <p>Ein Spiel ist ein Programm, das immer wieder von vorn durchläuft – wie ein Daumenkino. Jedes einzelne Bild heißt <span class="highlight">Frame</span>. In jedem Frame passiert:</p>
+                    <ol>
+                        <li>Der Computer prüft, was du gerade tust (Taste, Touch).</li>
+                        <li>Er berechnet, was sich bewegt hat und ob sich etwas berührt.</li>
+                        <li>Er zeichnet alles neu.</li>
+                        <li>Und wieder von vorn – meist 60-mal pro Sekunde.</li>
+                    </ol>
+
+                    <div class="navigation-buttons">
+                        <button class="button secondary" onclick="prevStep()">← Zurück</button>
+                        <button class="button" onclick="nextStep()">Weiter zu Schritt 3 →</button>
+                    </div>
+                </div>
+
+                <!-- Schritt 3: Unser Spielprojekt -->
+                <div class="step-content" data-step="2">
+                    <h2>🎯 Unser Spielprojekt: ein Sammelspiel</h2>
+                    <p>Als Beispiel nehmen wir ein einfaches <strong>Sammelspiel</strong>: Du steuerst eine Figur, sammelst Sterne und bekommst Punkte. In den nächsten vier Schritten baust du es Stück für Stück auf – und veränderst es mit Reglern selbst.</p>
+
+                    <div class="game-canvas-container">
+                        <canvas id="gameCanvas" width="600" height="400"></canvas>
+                        <p style="color: #888; margin-top: 10px;">Die leere Spielfläche – noch passiert nichts.</p>
+                    </div>
+
+                    <div class="info-box">
+                        <h3>🛠️ Canvas und Koordinaten</h3>
+                        <p>Die Spielfläche heißt <span class="highlight">Canvas</span> (Leinwand). Sie ist 600 Pixel breit und 400 Pixel hoch. Jeder Punkt hat zwei Zahlen: <strong>x</strong> (wie weit nach rechts) und <strong>y</strong> (wie weit nach unten). Achtung: Gezählt wird von <strong>oben links</strong> – dort ist x = 0 und y = 0.</p>
+                    </div>
+
+                    <div class="info-box">
+                        <h3>💡 Code und Anweisungs-Blöcke</h3>
+                        <p>Computer verstehen kein Deutsch, sondern eine genaue Programmiersprache – für Webspiele meist <strong>JavaScript</strong>. Wir zeigen dir jeden Schritt als <strong>Anweisungs-Blöcke</strong> (wie bei Scratch). Wer will, kann unter „Profi-Tipp“ den echten Code ansehen.</p>
+                    </div>
+
+                    <div class="navigation-buttons">
+                        <button class="button secondary" onclick="prevStep()">← Zurück</button>
+                        <button class="button" onclick="nextStep()">Weiter zu Schritt 4 →</button>
+                    </div>
+                </div>
+
+                <!-- Schritt 4: Die Spielfigur -->
+                <div class="step-content" data-step="3">
+                    <h2>👤 Schritt 4: Die Spielfigur</h2>
+                    <p>Eine Spielfigur ist für den Computer zunächst nur eine Form mit <strong>Farbe</strong>, <strong>Position</strong> und <strong>Größe</strong>. Diese Werte merkt er sich in <span class="highlight">Variablen</span> – Speicherplätzen, deren Inhalt sich ändern kann.</p>
+
+                    <div class="pseudo-code">
+                        <div class="pseudo-code-label">🧩 Anweisungen an den Computer – sie ändern sich mit deinen Reglern</div>
+                        <div class="pseudo-block block-start">
+                            <span class="block-icon">🟢</span>
+                            <div class="block-text">BEI SPIELSTART</div>
+                        </div>
+                        <div class="block-indent">
+                            <div class="pseudo-block block-action">
+                                <span class="block-icon">🎨</span>
+                                <div class="block-text">ZEICHNE ein Rechteck
+                                    <span class="block-param">Farbe: <span id="p-farbe">Grün</span></span>
+                                    <span class="block-param">Position: x = <span id="p-x">275</span>, y = <span id="p-y">175</span> (von oben links gemessen)</span>
+                                    <span class="block-param">Größe: <span id="p-g">50</span> × <span id="p-g2">50</span> Pixel</span>
+                                </div>
+                            </div>
+                        </div>
+                        <details class="profi-tipp">
+                            <summary>Profi-Tipp: So sieht echter JavaScript-Code aus</summary>
+                            <div class="code-example">
+<span class="comment">// Spieler zeichnen</span>
+zeichenfläche.fillStyle = <span class="string">'<span id="c-farbe">#4CAF50</span>'</span>;
+zeichenfläche.fillRect(<span class="string" id="c-x">275</span>, <span class="string" id="c-y">175</span>, <span class="string" id="c-g">50</span>, <span class="string" id="c-g2">50</span>);
+                            </div>
+                        </details>
+                    </div>
+
+                    <div class="werkstatt">
+                        <h3>🔧 Werkstatt</h3>
+                        <div class="regler">
+                            <div><label>Farbe</label><div class="farben" id="farben"></div></div>
+                            <div><label>Größe: <span class="wert" id="w-g">50</span> Pixel</label><input type="range" id="r-g" min="20" max="120" value="50"></div>
+                            <div><label>x (nach rechts): <span class="wert" id="w-x">275</span></label><input type="range" id="r-x" min="0" max="600" value="275"></div>
+                            <div><label>y (nach unten): <span class="wert" id="w-y">175</span></label><input type="range" id="r-y" min="0" max="400" value="175"></div>
+                        </div>
+                    </div>
+
+                    <div class="game-canvas-container">
+                        <canvas id="playerCanvas" width="600" height="400"></canvas>
+                    </div>
+
+                    <div class="mission">
+                        <h3>🎯 Deine Mission</h3>
+                        <p>Stelle die Regler so ein, dass die Figur <strong>genau in der Ecke unten rechts</strong> sitzt – ganz am Rand, aber noch vollständig zu sehen. Tipp: Achte auf die Größe!</p>
+                        <button class="button success" onclick="pruefeEcke()">Prüfen</button>
+                        <div class="rueckmeldung" id="fb-ecke"></div>
+                        <div id="mc-ecke" style="margin-top:10px"></div>
+                    </div>
+
+                    <div class="navigation-buttons">
+                        <button class="button secondary" onclick="prevStep()">← Zurück</button>
+                        <button class="button" onclick="nextStep()">Weiter zu Schritt 5 →</button>
+                    </div>
+                </div>
+
+                <!-- Schritt 5: Bewegung -->
+                <div class="step-content" data-step="4">
+                    <h2>🏃 Schritt 5: Bewegung</h2>
+                    <p>Bewegung heißt für den Computer: In jedem Frame wird die Variable <strong>spielerX</strong> oder <strong>spielerY</strong> ein bisschen größer oder kleiner – je nachdem, welche Taste gedrückt ist.</p>
+
+                    <div class="pseudo-code">
+                        <div class="pseudo-code-label">🧩 Anweisungen an den Computer</div>
+                        <div class="pseudo-block block-check">
+                            <span class="block-icon">🔄</span>
+                            <div class="block-text">IN JEDEM FRAME</div>
+                        </div>
+                        <div class="block-indent">
+                            <div class="pseudo-block block-event">
+                                <span class="block-icon">⌨️</span>
+                                <div class="block-text">WENN Pfeiltaste → gedrückt</div>
+                            </div>
+                            <div class="block-indent">
+                                <div class="pseudo-block block-action">
+                                    <span class="block-icon">➡️</span>
+                                    <div class="block-text">spielerX = spielerX + <span class="t-speed">5</span></div>
+                                </div>
+                            </div>
+                            <div class="pseudo-block block-event">
+                                <span class="block-icon">⌨️</span>
+                                <div class="block-text">WENN Pfeiltaste ← gedrückt</div>
+                            </div>
+                            <div class="block-indent">
+                                <div class="pseudo-block block-action">
+                                    <span class="block-icon">⬅️</span>
+                                    <div class="block-text">spielerX = spielerX − <span class="t-speed">5</span></div>
+                                </div>
+                            </div>
+                            <div class="pseudo-block block-check" id="block-rand">
+                                <span class="block-icon">🧱</span>
+                                <div class="block-text">FALLS spielerX größer als der Rand → zurück an den Rand
+                                    <span class="block-param">(genauso für links, oben und unten)</span>
+                                </div>
+                            </div>
+                        </div>
+                        <details class="profi-tipp">
+                            <summary>Profi-Tipp: So sieht echter JavaScript-Code aus</summary>
+                            <div class="code-example">
+<span class="keyword">if</span> (tasten[<span class="string">'ArrowRight'</span>]) {
+    spielerX = spielerX + <span class="string t-speed">5</span>;
+}
+<span class="keyword">if</span> (tasten[<span class="string">'ArrowLeft'</span>]) {
+    spielerX = spielerX - <span class="string t-speed">5</span>;
+}
+<span class="comment">// Rand: nicht weiter als 600 - Größe</span>
+<span class="keyword">if</span> (spielerX > <span class="string">550</span>) spielerX = <span class="string">550</span>;
+                            </div>
+                        </details>
+                    </div>
+
+                    <div class="werkstatt">
+                        <h3>🔧 Werkstatt</h3>
+                        <div class="regler">
+                            <div><label>Pixel pro Frame (Tempo): <span class="wert" id="w-speed">5</span></label><input type="range" id="r-speed" min="1" max="25" value="5"></div>
+                            <div><label class="schalter"><input type="checkbox" id="s-rand" checked> Rand-Regel an</label></div>
+                        </div>
+                    </div>
+
+                    <div class="game-canvas-container">
+                        <canvas id="movementCanvas" width="600" height="400"></canvas>
+                        <p style="color: #888; margin-top: 10px;">Pfeiltasten oder die Steuerungstasten unten benutzen</p>
+                    </div>
+
+                    <div class="virtual-controls" id="movementControls">
+                        <div class="control-pad">
+                            <button class="control-btn up" data-key="ArrowUp">↑</button>
+                            <button class="control-btn left" data-key="ArrowLeft">←</button>
+                            <button class="control-btn right" data-key="ArrowRight">→</button>
+                            <button class="control-btn down" data-key="ArrowDown">↓</button>
+                        </div>
+                    </div>
+
+                    <div class="mission">
+                        <h3>🎯 Deine Mission</h3>
+                        <ol>
+                            <li>Probiere Tempo <strong>1</strong> und Tempo <strong>25</strong>. Welches Tempo fühlt sich für ein Sammelspiel gut an?</li>
+                            <li>Schalte die <strong>Rand-Regel aus</strong> und lauf nach rechts. Was passiert? Hol die Figur danach zurück.</li>
+                        </ol>
+                        <div id="mc-rand"></div>
+                    </div>
+
+                    <div class="navigation-buttons">
+                        <button class="button secondary" onclick="prevStep()">← Zurück</button>
+                        <button class="button" onclick="nextStep()">Weiter zu Schritt 6 →</button>
+                    </div>
+                </div>
+
+                <!-- Schritt 6: Sammeln -->
+                <div class="step-content" data-step="5">
+                    <h2>⭐ Schritt 6: Sammeln und Berühren</h2>
+                    <p>Woher weiß der Computer, dass die Figur den Stern berührt? Er berechnet in jedem Frame den <strong>Abstand</strong> zwischen beiden. Ist er kleiner als ein festgelegter Wert, zählt das als Berührung – eine <span class="highlight">Kollision</span>.</p>
+
+                    <div class="pseudo-code">
+                        <div class="pseudo-code-label">🧩 Anweisungen an den Computer</div>
+                        <div class="pseudo-block block-set">
+                            <span class="block-icon">⭐</span>
+                            <div class="block-text">MERKE DIR: der Stern
+                                <span class="block-param">Position x, y · gesammelt? → nein</span>
+                            </div>
+                        </div>
+                        <div class="pseudo-block block-check">
+                            <span class="block-icon">🔄</span>
+                            <div class="block-text">IN JEDEM FRAME</div>
+                        </div>
+                        <div class="block-indent">
+                            <div class="pseudo-block block-event">
+                                <span class="block-icon">💥</span>
+                                <div class="block-text">FALLS Abstand Figur–Stern kleiner als <span id="t-abstand">40</span> Pixel</div>
+                            </div>
+                            <div class="block-indent">
+                                <div class="pseudo-block block-action">
+                                    <span class="block-icon">✅</span>
+                                    <div class="block-text">Stern gesammelt
+                                        <span class="block-param">Stern erscheint an einer neuen, zufälligen Stelle</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <details class="profi-tipp">
+                            <summary>Profi-Tipp: So sieht echter JavaScript-Code aus</summary>
+                            <div class="code-example">
+<span class="keyword">const</span> abstand = Math.sqrt(dx * dx + dy * dy); <span class="comment">// Satz des Pythagoras</span>
+<span class="keyword">if</span> (abstand &lt; <span class="string" id="c-abstand">40</span>) {
+    stern.gesammelt = <span class="keyword">true</span>;
+}
+                            </div>
+                        </details>
+                    </div>
+
+                    <div class="werkstatt">
+                        <h3>🔧 Werkstatt</h3>
+                        <div class="regler">
+                            <div><label>Berührungs-Abstand: <span class="wert" id="w-abstand">40</span> Pixel</label><input type="range" id="r-abstand" min="5" max="150" value="40"></div>
+                            <div><label class="schalter"><input type="checkbox" id="s-zone"> Trefferzone anzeigen</label></div>
+                        </div>
+                    </div>
+
+                    <div class="game-canvas-container">
+                        <canvas id="collectibleCanvas" width="600" height="400"></canvas>
+                        <p class="hud-zeile">Gesammelt: <span id="hud-gesammelt">0</span></p>
+                    </div>
+
+                    <div class="virtual-controls" id="collectibleControls">
+                        <div class="control-pad">
+                            <button class="control-btn up" data-key="ArrowUp">↑</button>
+                            <button class="control-btn left" data-key="ArrowLeft">←</button>
+                            <button class="control-btn right" data-key="ArrowRight">→</button>
+                            <button class="control-btn down" data-key="ArrowDown">↓</button>
+                        </div>
+                    </div>
+
+                    <div class="mission">
+                        <h3>🎯 Deine Mission</h3>
+                        <p>Schalte die Trefferzone ein. Sammle Sterne mit Abstand <strong>5</strong>, dann mit <strong>150</strong>. Welcher Wert ist fair?</p>
+                        <div id="mc-abstand"></div>
+                    </div>
+
+                    <div class="navigation-buttons">
+                        <button class="button secondary" onclick="prevStep()">← Zurück</button>
+                        <button class="button" onclick="nextStep()">Weiter zu Schritt 7 →</button>
+                    </div>
+                </div>
+
+                <!-- Schritt 7: Punkte & Regeln -->
+                <div class="step-content" data-step="6">
+                    <h2>🏆 Schritt 7: Punkte, Zeit und Hindernisse</h2>
+                    <p>Erst mit <strong>Regeln</strong> wird aus Herumlaufen ein Spiel: Punkte für Sterne, eine Zeitgrenze, ein Hindernis, das Punkte kostet. Jede Regel ist für den Computer ein <strong>WENN … DANN …</strong>.</p>
+
+                    <div class="pseudo-code">
+                        <div class="pseudo-code-label">🧩 Anweisungen an den Computer</div>
+                        <div class="pseudo-block block-set">
+                            <span class="block-icon">🟠</span>
+                            <div class="block-text">MERKE DIR: punkte = 0 · zeit = <span id="t-zeit">30</span> Sekunden</div>
+                        </div>
+                        <div class="pseudo-block block-check">
+                            <span class="block-icon">🔄</span>
+                            <div class="block-text">IN JEDEM FRAME</div>
+                        </div>
+                        <div class="block-indent">
+                            <div class="pseudo-block block-event"><span class="block-icon">⭐</span><div class="block-text">WENN Stern gesammelt → punkte = punkte + <span id="t-punkte">10</span></div></div>
+                            <div class="pseudo-block block-event" id="block-hindernis"><span class="block-icon">🟥</span><div class="block-text">WENN Hindernis berührt → punkte = punkte − 20</div></div>
+                            <div class="pseudo-block block-event" id="block-zeit"><span class="block-icon">⏱️</span><div class="block-text">WENN zeit = 0 → Spiel vorbei, Punkte anzeigen</div></div>
+                        </div>
+                        <details class="profi-tipp">
+                            <summary>Profi-Tipp: So sieht echter JavaScript-Code aus</summary>
+                            <div class="code-example">
+<span class="keyword">if</span> (stern.gesammelt) {
+    punkte = punkte + <span class="string" id="c-punkte">10</span>;
+}
+<span class="keyword">if</span> (berührt(spieler, hindernis)) {
+    punkte = punkte - <span class="string">20</span>;
+}
+<span class="keyword">if</span> (zeit &lt;= <span class="string">0</span>) {
+    spielVorbei();
+}
+                            </div>
+                        </details>
+                    </div>
+
+                    <div class="werkstatt">
+                        <h3>🔧 Werkstatt</h3>
+                        <div class="regler">
+                            <div><label>Punkte pro Stern: <span class="wert" id="w-punkte">10</span></label><input type="range" id="r-punkte" min="1" max="100" value="10"></div>
+                            <div><label>Anzahl Sterne: <span class="wert" id="w-sterne">5</span></label><input type="range" id="r-sterne" min="1" max="12" value="5"></div>
+                            <div><label class="schalter"><input type="checkbox" id="s-zeit" checked> Zeitgrenze (30 Sekunden)</label></div>
+                            <div><label class="schalter"><input type="checkbox" id="s-hindernis"> Hindernis (kostet 20 Punkte)</label></div>
+                        </div>
+                        <button class="button success" onclick="neuesSpiel()">▶ Neues Spiel</button>
+                    </div>
+
+                    <div class="game-canvas-container">
+                        <canvas id="fullGameCanvas" width="600" height="400"></canvas>
+                        <p class="hud-zeile" id="hud-voll"></p>
+                    </div>
+
+                    <div class="virtual-controls" id="fullGameControls">
+                        <div class="control-pad">
+                            <button class="control-btn up" data-key="ArrowUp">↑</button>
+                            <button class="control-btn left" data-key="ArrowLeft">←</button>
+                            <button class="control-btn right" data-key="ArrowRight">→</button>
+                            <button class="control-btn down" data-key="ArrowDown">↓</button>
+                        </div>
+                    </div>
+
+                    <div class="mission">
+                        <h3>👥 Mission zu zweit</h3>
+                        <ol>
+                            <li>Spielt beide eine Runde mit den Standard-Einstellungen. Notiert eure Punkte.</li>
+                            <li>Partner A stellt für Partner B eine Version ein, die <strong>schwer, aber fair</strong> ist. Dann tauschen.</li>
+                            <li>Besprecht: Welche Einstellung hat am meisten Spaß gemacht – und warum?</li>
+                        </ol>
+                        <div id="mc-punkte"></div>
+                    </div>
+
+                    <div class="navigation-buttons">
+                        <button class="button secondary" onclick="prevStep()">← Zurück</button>
+                        <button class="button" onclick="nextStep()">Weiter zu Schritt 8 →</button>
+                    </div>
+                </div>
+
+                <!-- Schritt 8: Warum Spiele fesseln -->
+                <div class="step-content" data-step="7">
+                    <h2>🧲 Schritt 8: Warum Spiele dich festhalten</h2>
+                    <p>Spielefirmen wollen, dass du lange spielst – und manchmal, dass du Geld ausgibst. Dafür nutzen sie bestimmte <span class="highlight">Spielmechaniken</span>. Manche machen einfach Spaß, andere setzen dich unter Druck.</p>
+
+                    <div class="mechanik">
+                        <div><strong>🏅 Belohnung</strong><br>Punkte, Sound, Glitzer – dein Gehirn freut sich über jede Belohnung.</div>
+                        <div><strong>📈 Fortschritt</strong><br>Ein Balken, der fast voll ist. Nur noch ein Level …</div>
+                        <div><strong>🗂️ Sammeln</strong><br>Ein Album, in dem nur noch eine Karte fehlt.</div>
+                        <div><strong>🎲 Zufall</strong><br>Truhen und Lootboxen – vielleicht ist diesmal etwas Seltenes drin.</div>
+                        <div><strong>📅 Tägliche Serie</strong><br>„Komm morgen wieder, sonst ist deine 12-Tage-Serie weg!“</div>
+                        <div><strong>👥 Vergleich</strong><br>Ranglisten und Freunde, die schon weiter sind.</div>
+                        <div><strong>💰 Kaufanreize</strong><br>Timer, Rabatte, Spielwährung – kennst du aus „In-App-Käufe“.</div>
+                    </div>
+
+                    <div class="mission">
+                        <h3>🔎 Welche Mechanik steckt dahinter?</h3>
+                        <div id="mc-mechanik"></div>
+                    </div>
+
+                    <div class="info-box">
+                        <h3>⚖️ Fair oder unfair?</h3>
+                        <p>Eine Mechanik ist eher <strong>fair</strong>, wenn sie das Spielen schöner macht und du jederzeit aufhören kannst. Sie ist eher <strong>unfair</strong>, wenn sie dich unter Druck setzt (Angst, etwas zu verpassen), mit Zufall um Geld spielt oder Spieler, die zahlen, gewinnen lässt.</p>
+                        <p>Das brauchst du gleich für <strong>Folie 7</strong> deiner Präsentation.</p>
+                    </div>
+
+                    <div class="navigation-buttons">
+                        <button class="button secondary" onclick="prevStep()">← Zurück</button>
+                        <button class="button" onclick="nextStep()">Weiter zu Schritt 9 →</button>
+                    </div>
+                </div>
+
+                <!-- Schritt 9: Präsentation bauen -->
+                <div class="step-content" data-step="8">
+                    <h2>🛠️ Schritt 9: Baue die Präsentation deines Spiels</h2>
+                    <p>Jetzt entwirfst du dein eigenes Spiel – und zwar <strong>direkt in Keynote</strong>. Du musst nichts doppelt schreiben: Jede Folie entsteht Schritt für Schritt. Hake ab, was du erledigt hast. Das gelbe Notizfeld rechts ist nur eine Hilfe zum Sortieren deiner Ideen – du musst es nicht benutzen.</p>
+
+                    <div class="info-box">
+                        <h3>📱 Vorbereitung in Keynote</h3>
+                        <ol>
+                            <li>Öffne <strong>Keynote</strong> und wähle ein schlichtes Design.</li>
+                            <li>Speichere die Präsentation als <em>„Mein Spiel – Vorname“</em>.</li>
+                            <li>Lege <strong>8 Folien</strong> an. Dann geht es mit Folie 1 los.</li>
+                        </ol>
+                        <p>Unten siehst du bei jeder Folie ein Beispiel für das ausgedachte Spiel <b>„Sternenjäger“</b>.</p>
+                    </div>
+
+                    <div id="folien"></div>
+
+                    <div class="mission">
+                        <h3>👥 Partner-Check, bevor du präsentierst</h3>
+                        <p>Tauscht die iPads. Dein Partner schaut deine Folien durch und hakt ehrlich ab:</p>
+                        <div id="partnercheck"></div>
+                        <p style="margin-top:10px"><strong>Dein Partner sagt dir einen Tipp</strong>, was du noch verbessern solltest. Verbessere die Folie, bevor du präsentierst.</p>
+                    </div>
+
+                    <div class="navigation-buttons">
+                        <button class="button secondary" onclick="prevStep()">← Zurück</button>
+                        <button class="button" onclick="nextStep()">Weiter zu Schritt 10 →</button>
+                    </div>
+                </div>
+
+                <!-- Schritt 10: Präsentieren -->
+                <div class="step-content" data-step="9">
+                    <h2>🎤 Schritt 10: Präsentieren</h2>
+                    <p>Du stellst dein Spiel in <strong>3 bis 5 Minuten</strong> vor. Danach dürfen die anderen Fragen stellen. Bewertet wird nicht nur, was in deinem Spiel vorkommt, sondern vor allem, ob du <strong>erklären kannst, warum</strong> du es so entworfen hast.</p>
+
+                    <h3>📋 So wird bewertet</h3>
+                    <table class="raster">
+                        <tr><th>Bereich</th><th>🌟 Sehr gut</th><th>👍 Gut / in Ordnung</th><th>🔧 Noch nicht</th></tr>
+                        <tr><td>💡 Spielidee & Regeln</td><td>Ziel, Figur und Regeln sind klar; mindestens 3 Regeln als WENN … DANN …</td><td>Idee verständlich, Regeln teilweise unklar</td><td>Man versteht nicht, wie das Spiel funktioniert</td></tr>
+                        <tr><td>🧠 Entscheidungen begründen</td><td>Erklärt mehrere Entscheidungen mit „weil …“ und nennt eine verworfene Idee</td><td>Begründet einzelne Entscheidungen</td><td>Nur Beschreibung ohne Begründung</td></tr>
+                        <tr><td>⚖️ Fesselnd, aber fair</td><td>Nennt die Mechaniken seines Spiels und beurteilt, ob sie fair sind</td><td>Nennt Mechaniken ohne Bewertung</td><td>Fehlt</td></tr>
+                        <tr><td>🖼️ Folien</td><td>Gut lesbar, wenig Text, eigene Skizzen oder Bilder</td><td>Lesbar, aber viel Text</td><td>Schwer lesbar oder unvollständig</td></tr>
+                        <tr><td>🎤 Vortrag</td><td>Frei gesprochen, Blickkontakt, beantwortet Fragen sicher</td><td>Teilweise abgelesen</td><td>Nur abgelesen</td></tr>
+                    </table>
+
+                    <div class="info-box">
+                        <h3>💡 Tipps für den Vortrag</h3>
+                        <ul>
+                            <li>👀 Sprich zu den Zuhörern, nicht zum Bildschirm.</li>
+                            <li>📝 Auf der Folie stehen Stichworte – den Rest erzählst du.</li>
+                            <li>⏱️ Übe einmal laut mit Partner und stoppt die Zeit.</li>
+                            <li>❓ Überlege vorher: Welche Frage könnte kommen? Was antwortest du?</li>
+                        </ul>
+                    </div>
+
+                    <div class="success-box">
+                        <p>🙋 <strong>Als Zuhörer:</strong> Stelle nach jedem Vortrag mindestens eine echte Frage, z. B. „Warum hast du dich für … entschieden?“ oder „Was passiert, wenn …?“</p>
+                    </div>
+
+                    <div class="navigation-buttons">
+                        <button class="button secondary" onclick="prevStep()">← Zurück</button>
+                        <div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const totalSteps = 10;
+        const KEY = 'dm6_spiele_v2';
+        let currentStep = 0;
+        let keys = {};
+
+        // ===== Speichern (nur auf diesem Gerät) =====
+        let S = { step: 0, maxStep: 0, checks: {}, notes: {}, pc: [] };
+        try { S = Object.assign(S, JSON.parse(localStorage.getItem(KEY)) || {}); } catch (e) {}
+        function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+
+        // ===== Werkstatt-Einstellungen =====
+        const FARBEN = [['#4CAF50', 'Grün'], ['#3b82f6', 'Blau'], ['#ef4444', 'Rot'], ['#f59e0b', 'Orange'], ['#a855f7', 'Lila']];
+        const cfg = { farbe: '#4CAF50', g: 50, x: 275, y: 175, speed: 5, rand: true, abstand: 40, zone: false, punkte: 10, sterne: 5, zeit: true, hindernis: false };
+        const setText = (sel, v) => document.querySelectorAll(sel).forEach(e => e.textContent = v);
+
+        document.addEventListener('DOMContentLoaded', function () {
+            initStepNavigation();
+            initVirtualControls();
+            initWerkstatt();
+            initFragen();
+            initFolien();
+            document.addEventListener('keydown', e => {
+                keys[e.key] = true;
+                if (e.key.startsWith('Arrow') && currentStep >= 4 && currentStep <= 6 && !/INPUT|TEXTAREA/.test(document.activeElement.tagName)) e.preventDefault();
+            });
+            document.addEventListener('keyup', e => { keys[e.key] = false; });
+            const leer = document.getElementById('gameCanvas').getContext('2d');
+            leer.fillStyle = '#1a1a2e'; leer.fillRect(0, 0, 600, 400);
+            goToStep(Math.min(S.step || 0, totalSteps - 1));
+            requestAnimationFrame(loop);
+        });
+
+        // ===== Virtuelle Steuerungstasten (iPad) =====
+        function initVirtualControls() {
+            document.querySelectorAll('.control-btn').forEach(btn => {
+                const set = (on, e) => { if (e) e.preventDefault(); const k = btn.dataset.key; if (k) { keys[k] = on; btn.classList.toggle('touching', on); } };
+                btn.addEventListener('touchstart', e => { e.stopPropagation(); set(true, e); }, { passive: false });
+                btn.addEventListener('touchend', e => { e.stopPropagation(); set(false, e); }, { passive: false });
+                btn.addEventListener('touchcancel', e => set(false, e), { passive: false });
+                btn.addEventListener('mousedown', e => set(true, e));
+                btn.addEventListener('mouseup', e => set(false, e));
+                btn.addEventListener('mouseleave', () => set(false));
+                btn.addEventListener('contextmenu', e => e.preventDefault());
+            });
+        }
+
+        // ===== Navigation =====
+        function initStepNavigation() {
+            document.querySelectorAll('.step-item').forEach(item => item.addEventListener('click', () => goToStep(parseInt(item.dataset.step))));
+        }
+
+        function goToStep(step) {
+            S.step = step; S.maxStep = Math.max(S.maxStep || 0, step); save();
+            document.querySelectorAll('.step-content').forEach(c => c.classList.toggle('active', +c.dataset.step === step));
+            document.querySelectorAll('.step-item').forEach(item => {
+                const n = +item.dataset.step;
+                item.classList.toggle('active', n === step);
+                item.classList.toggle('completed', n < S.maxStep && n !== step);
+            });
+            currentStep = step;
+            document.getElementById('progressFill').style.width = ((step + 1) / totalSteps * 100) + '%';
+            const main = document.querySelector('.main-content'); if (main) main.scrollTop = 0;
+            keys = {};
+            document.querySelectorAll('.virtual-controls').forEach(c => c.classList.remove('active'));
+            const ctrl = { 4: 'movementControls', 5: 'collectibleControls', 6: 'fullGameControls' }[step];
+            if (ctrl) document.getElementById(ctrl).classList.add('active');
+            if (step === 3) drawPlayer();
+            if (step === 6) neuesSpiel();
+        }
+        function nextStep() { if (currentStep < totalSteps - 1) goToStep(currentStep + 1); }
+        function prevStep() { if (currentStep > 0) goToStep(currentStep - 1); }
+
+        // ===== Fragen mit Rückmeldung =====
+        function mc(id, items) {
+            const root = document.getElementById(id);
+            let i = 0;
+            const paint = () => {
+                if (i >= items.length) { root.innerHTML = '<div class="rueckmeldung ok">🏆 Alle Fragen beantwortet!</div>'; return; }
+                const it = items[i];
+                root.innerHTML = (items.length > 1 ? `<p style="color:#6c757d;font-size:.9em;margin:0">Frage ${i + 1} von ${items.length}</p>` : '') +
+                    `<p><strong>${it.q}</strong></p>` + it.opts.map((o, k) => `<button class="mc-opt" data-k="${k}">${o}</button>`).join('') + '<div class="mc-fb"></div>';
+                root.querySelectorAll('.mc-opt').forEach(b => b.onclick = () => {
+                    root.querySelectorAll('.mc-opt').forEach(x => x.disabled = true);
+                    const ok = +b.dataset.k === it.right;
+                    b.classList.add(ok ? 'richtig' : 'falsch');
+                    root.querySelector(`.mc-opt[data-k="${it.right}"]`).classList.add('richtig');
+                    root.querySelector('.mc-fb').innerHTML = (ok ? '✅ Richtig! ' : '🤔 Nicht ganz. ') + it.why +
+                        (items.length > 1 ? ` <button class="button" style="padding:8px 18px;font-size:.95em">${i + 1 < items.length ? 'Nächste Frage' : 'Fertig'} →</button>` : '');
+                    const nb = root.querySelector('.mc-fb .button'); if (nb) nb.onclick = () => { i++; paint(); };
+                });
+            };
+            paint();
+        }
+
+        function initFragen() {
+            mc('mc-bausteine', [{ q: 'In Tetris verschwindet eine Reihe, sobald sie voll ist. Welcher Baustein ist das?', opts: ['Eine Regel', 'Grafik', 'Interaktion'], right: 0, why: '„Wenn eine Reihe voll ist, dann verschwindet sie“ – das ist eine Regel, die jemand programmiert hat.' }]);
+            mc('mc-rand', [{ q: 'Was passiert ohne Rand-Regel, wenn du lange nach rechts drückst?', opts: ['spielerX wird immer größer – die Figur wird außerhalb des Bildes gezeichnet und ist unsichtbar.', 'Das Spiel stürzt ab, weil die Figur den Bildschirm verlässt.', 'Die Figur taucht automatisch links wieder auf.'], right: 0, why: 'Der Computer rechnet einfach weiter. Dass die Figur im Bild bleibt, ist eine Regel, die jemand programmieren muss.' }]);
+            mc('mc-abstand', [{ q: 'Bei Abstand 150 sammelt man Sterne fast im Vorbeifliegen. Warum fühlt sich das unfair an?', opts: ['Man muss kaum zielen – Können zählt dann fast nicht mehr.', 'Weil die Sterne dann schneller werden.', 'Es ist nicht unfair – mehr gesammelte Sterne machen immer mehr Spaß.'], right: 0, why: 'Die Trefferzone entscheidet, wie schwer ein Spiel ist. Entwickler testen solche Werte sehr lange.' }]);
+            mc('mc-punkte', [{ q: 'Ist das Spiel mit 100 Punkten pro Stern spannender als mit 10?', opts: ['Ja – mehr Punkte machen mehr Spaß.', 'Nein – Punkte bedeuten nur etwas im Vergleich. Spannend wird es durch Herausforderungen wie Zeit und Hindernisse.', 'Ja, weil man dann schneller gewinnt.'], right: 1, why: 'Ob 10 oder 100 Punkte: Das Spiel bleibt gleich schwer. Spannung entsteht durch Regeln, die dich herausfordern.' }]);
+            mc('mc-mechanik', [
+                { q: '„Du hast 12 Tage in Folge gespielt! Komm morgen wieder, sonst ist deine Serie weg.“', opts: ['Tägliche Serie', 'Sammeln', 'Belohnung'], right: 0, why: 'Die Angst, etwas zu verlieren, holt dich jeden Tag zurück – eher unfair, wenn man sich gezwungen fühlt.' },
+                { q: 'In deinem Album fehlt nur noch eine von 50 Karten.', opts: ['Zufall', 'Sammeln', 'Vergleich'], right: 1, why: 'Etwas Unvollständiges motiviert stark. Fair, solange man die letzte Karte erspielen kann – unfair, wenn man sie nur kaufen kann.' },
+                { q: 'Dein Freund steht in der Rangliste drei Plätze vor dir.', opts: ['Vergleich', 'Fortschritt', 'Kaufanreiz'], right: 0, why: 'Vergleich spornt an – kann aber auch Druck machen.' },
+                { q: 'Eine Truhe für 2,99 € mit 1 % Chance auf einen legendären Skin.', opts: ['Belohnung', 'Zufall und Kaufanreiz', 'Fortschritt'], right: 1, why: 'Zufall gegen echtes Geld – genau wie die Lootboxen aus „In-App-Käufe“.' },
+                { q: 'Dein Erfahrungsbalken steht bei 95 %.', opts: ['Fortschritt', 'Tägliche Serie', 'Vergleich'], right: 0, why: '„Nur noch kurz bis zum nächsten Level …“ – deshalb fällt Aufhören so schwer.' }
+            ]);
+        }
+
+        // ===== Werkstatt-Regler =====
+        function initWerkstatt() {
+            const farben = document.getElementById('farben');
+            farben.innerHTML = FARBEN.map(([c, n]) => `<button class="farbe ${c === cfg.farbe ? 'sel' : ''}" data-c="${c}" data-n="${n}" style="background:${c}" aria-label="${n}"></button>`).join('');
+            farben.querySelectorAll('.farbe').forEach(b => b.onclick = () => {
+                cfg.farbe = b.dataset.c; setText('#p-farbe', b.dataset.n); setText('#c-farbe', b.dataset.c);
+                farben.querySelectorAll('.farbe').forEach(x => x.classList.toggle('sel', x === b)); drawPlayer();
+            });
+            const regler = (id, key, after) => {
+                const r = document.getElementById('r-' + id);
+                r.oninput = () => { cfg[key] = +r.value; setText('#w-' + id, r.value); if (after) after(); };
+            };
+            regler('g', 'g', drawPlayer); regler('x', 'x', drawPlayer); regler('y', 'y', drawPlayer);
+            regler('speed', 'speed', () => setText('.t-speed', cfg.speed));
+            regler('abstand', 'abstand', () => { setText('#t-abstand', cfg.abstand); setText('#c-abstand', cfg.abstand); });
+            regler('punkte', 'punkte', () => { setText('#t-punkte', cfg.punkte); setText('#c-punkte', cfg.punkte); });
+            regler('sterne', 'sterne', neuesSpiel);
+            const schalter = (id, key, after) => { const s = document.getElementById('s-' + id); s.onchange = () => { cfg[key] = s.checked; if (after) after(); }; };
+            schalter('rand', 'rand', () => document.getElementById('block-rand').style.opacity = cfg.rand ? 1 : .35);
+            schalter('zone', 'zone');
+            schalter('zeit', 'zeit', () => { document.getElementById('block-zeit').style.opacity = cfg.zeit ? 1 : .35; neuesSpiel(); });
+            schalter('hindernis', 'hindernis', () => { document.getElementById('block-hindernis').style.opacity = cfg.hindernis ? 1 : .35; neuesSpiel(); });
+            document.getElementById('block-hindernis').style.opacity = .35;
+        }
+
+        function figur(ctx, x, y, g, farbe) {
+            ctx.fillStyle = farbe; ctx.fillRect(x, y, g, g);
+            ctx.fillStyle = 'white';
+            const a = Math.max(3, g * .16);
+            ctx.fillRect(x + g * .2, y + g * .3, a, a); ctx.fillRect(x + g * .64, y + g * .3, a, a);
+        }
+        function hintergrund(ctx) { ctx.fillStyle = '#1a1a2e'; ctx.fillRect(0, 0, 600, 400); }
+        function koordinaten(ctx, x, y) { ctx.fillStyle = '#9aa4d6'; ctx.font = '14px monospace'; ctx.fillText(`spielerX = ${Math.round(x)}   spielerY = ${Math.round(y)}`, 10, 390); }
+
+        function drawPlayer() {
+            const ctx = document.getElementById('playerCanvas').getContext('2d');
+            hintergrund(ctx); figur(ctx, cfg.x, cfg.y, cfg.g, cfg.farbe);
+            setText('#p-x', cfg.x); setText('#p-y', cfg.y); setText('#p-g', cfg.g); setText('#p-g2', cfg.g);
+            setText('#c-x', cfg.x); setText('#c-y', cfg.y); setText('#c-g', cfg.g); setText('#c-g2', cfg.g);
+        }
+
+        function pruefeEcke() {
+            const fb = document.getElementById('fb-ecke'), r = cfg.x + cfg.g, u = cfg.y + cfg.g;
+            let msg = '';
+            if (r > 600) msg = `Die Figur ragt rechts heraus: x + Größe = ${r}, die Fläche ist aber nur 600 breit.`;
+            else if (u > 400) msg = `Die Figur ragt unten heraus: y + Größe = ${u}, die Fläche ist aber nur 400 hoch.`;
+            else if (r < 590 || u < 390) msg = `Noch nicht ganz in der Ecke: rechts fehlen ${600 - r}, unten ${400 - u} Pixel.`;
+            if (msg) { fb.className = 'rueckmeldung nein'; fb.textContent = msg; return; }
+            fb.className = 'rueckmeldung ok';
+            fb.textContent = `🎯 Genau: x = ${cfg.x} und y = ${cfg.y}, weil x = 600 − ${cfg.g} und y = 400 − ${cfg.g}.`;
+            mc('mc-ecke', [{ q: 'Warum ist x bei der Figur in der Ecke nicht 600?', opts: ['Weil x die linke Kante der Figur angibt – rechts daneben braucht die Figur noch ihre Breite.', 'Weil die Spielfläche in Wirklichkeit nur 550 Pixel breit ist.', 'Weil der Computer von jeder Zahl automatisch 50 abzieht.'], right: 0, why: 'x und y sind die Ecke oben links der Figur. Damit sie ganz zu sehen ist: x = 600 − Größe.' }]);
+        }
+
+        // ===== Spiel-Logik für Schritt 5–7 =====
+        const mv = { x: 275, y: 175 };
+        const col = { x: 275, y: 175, star: { x: 450, y: 120, weg: false }, n: 0 };
+        let voll = null, last = 0;
+
+        function bewegen(p, g, speed, rand) {
+            if (keys.ArrowRight) p.x += speed;
+            if (keys.ArrowLeft) p.x -= speed;
+            if (keys.ArrowUp) p.y -= speed;
+            if (keys.ArrowDown) p.y += speed;
+            if (rand) { p.x = Math.max(0, Math.min(p.x, 600 - g)); p.y = Math.max(0, Math.min(p.y, 400 - g)); }
+        }
+        function stern(ctx, x, y, r, farbe) {
+            ctx.fillStyle = farbe || '#FFD700'; ctx.beginPath();
+            for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5 - Math.PI / 2, rr = i % 2 ? r * .45 : r; ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
+            ctx.closePath(); ctx.fill();
+        }
+        const zufall = () => ({ x: 40 + Math.random() * 520, y: 40 + Math.random() * 320, weg: false });
+
+        function neuesSpiel() {
+            voll = { x: 275, y: 175, punkte: 0, zeit: 30, vorbei: false, sterne: Array.from({ length: cfg.sterne }, zufall),
+                     h: { x: 80, y: 60, vx: 2.4, vy: 1.8, sperre: 0 } };
+            setText('#t-zeit', 30);
+        }
+
+        function loop(t) {
+            const dt = last ? Math.min(0.05, (t - last) / 1000) : 0; last = t;
+            if (currentStep === 4) {
+                const ctx = document.getElementById('movementCanvas').getContext('2d');
+                bewegen(mv, 50, cfg.speed, cfg.rand);
+                hintergrund(ctx); figur(ctx, mv.x, mv.y, 50, cfg.farbe); koordinaten(ctx, mv.x, mv.y);
+                if (mv.x > 600 || mv.x < -50 || mv.y > 400 || mv.y < -50) { ctx.fillStyle = '#fbbf24'; ctx.font = 'bold 18px sans-serif'; ctx.fillText('Figur außerhalb des Bildes!', 190, 30); }
+            }
+            if (currentStep === 5) {
+                const ctx = document.getElementById('collectibleCanvas').getContext('2d');
+                bewegen(col, 50, 5, true);
+                const s = col.star, d = Math.hypot(col.x + 25 - s.x, col.y + 25 - s.y);
+                if (!s.weg && d < cfg.abstand) { s.weg = true; col.n++; setText('#hud-gesammelt', col.n); setTimeout(() => Object.assign(s, zufall()), 400); }
+                hintergrund(ctx);
+                if (cfg.zone && !s.weg) { ctx.fillStyle = 'rgba(102,126,234,.25)'; ctx.beginPath(); ctx.arc(s.x, s.y, cfg.abstand, 0, Math.PI * 2); ctx.fill(); }
+                if (!s.weg) stern(ctx, s.x, s.y, 16);
+                figur(ctx, col.x, col.y, 50, cfg.farbe);
+                if (cfg.zone) { ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(col.x + 25, col.y + 25, 3, 0, Math.PI * 2); ctx.fill(); }
+            }
+            if (currentStep === 6 && voll) {
+                const ctx = document.getElementById('fullGameCanvas').getContext('2d'), v = voll;
+                if (!v.vorbei) {
+                    bewegen(v, 50, 5, true);
+                    v.sterne.forEach(s => {
+                        if (!s.weg && Math.hypot(v.x + 25 - s.x, v.y + 25 - s.y) < 35) { s.weg = true; v.punkte += cfg.punkte; setTimeout(() => Object.assign(s, zufall()), 800); }
+                    });
+                    if (cfg.hindernis) {
+                        const h = v.h; h.x += h.vx * 60 * dt; h.y += h.vy * 60 * dt;
+                        if (h.x < 0 || h.x > 560) h.vx *= -1; if (h.y < 0 || h.y > 360) h.vy *= -1;
+                        h.sperre = Math.max(0, h.sperre - dt);
+                        if (!h.sperre && v.x < h.x + 40 && v.x + 50 > h.x && v.y < h.y + 40 && v.y + 50 > h.y) { v.punkte -= 20; h.sperre = 1; }
+                    }
+                    if (cfg.zeit) { v.zeit -= dt; if (v.zeit <= 0) { v.zeit = 0; v.vorbei = true; } }
+                }
+                hintergrund(ctx);
+                v.sterne.forEach(s => { if (!s.weg) stern(ctx, s.x, s.y, 13); });
+                if (cfg.hindernis) { ctx.fillStyle = v.h.sperre ? '#fca5a5' : '#ef4444'; ctx.fillRect(v.h.x, v.h.y, 40, 40); }
+                figur(ctx, v.x, v.y, 50, cfg.farbe);
+                ctx.fillStyle = 'white'; ctx.font = 'bold 22px Arial';
+                ctx.fillText('Punkte: ' + v.punkte, 10, 30);
+                if (cfg.zeit) ctx.fillText('Zeit: ' + Math.ceil(v.zeit), 480, 30);
+                if (v.vorbei) {
+                    ctx.fillStyle = 'rgba(0,0,0,.7)'; ctx.fillRect(0, 0, 600, 400);
+                    ctx.fillStyle = '#ffd700'; ctx.font = 'bold 36px Arial'; ctx.textAlign = 'center';
+                    ctx.fillText('Zeit vorbei!', 300, 180); ctx.fillStyle = 'white'; ctx.font = '24px Arial';
+                    ctx.fillText(v.punkte + ' Punkte', 300, 220); ctx.textAlign = 'left';
+                }
+                setText('#hud-voll', `Einstellung: ${cfg.punkte} Punkte pro Stern · ${cfg.sterne} Sterne · ${cfg.zeit ? 'mit' : 'ohne'} Zeitgrenze · ${cfg.hindernis ? 'mit' : 'ohne'} Hindernis`);
+            }
+            requestAnimationFrame(loop);
+        }
+
+        // ===== Schritt 9: Folien =====
+        const FOLIEN = [
+            { titel: '🏷️ Titelfolie', schritte: [
+                'Schreib den <strong>Namen deines Spiels</strong> groß auf die Folie – höchstens drei Wörter.',
+                'Darunter klein den <strong>Spieltyp</strong>: Sammelspiel, Rennspiel, Jump & Run, Rätselspiel …',
+                'Füge ein <strong>Titelbild</strong> ein: eine eigene Skizze (Keynote: <strong>+</strong> → Zeichnen) oder ein großes Emoji.',
+                'Unten klein: dein Vorname.'],
+              beispiel: 'Titel „Sternenjäger“, darunter: Sammelspiel im Weltraum. Titelbild: eine gezeichnete Rakete zwischen Sternen.' },
+            { titel: '💡 Worum geht es?', schritte: [
+                'Überschrift: <em>Worum geht es?</em>',
+                'Satz 1: <span class="satzanfang">In meinem Spiel bist du …</span>',
+                'Satz 2: <span class="satzanfang">Dein Ziel ist es, …</span>',
+                'Satz 3: <span class="satzanfang">Schwierig wird es, weil …</span>',
+                'Lies die drei Sätze einmal laut: Versteht jemand, der dein Spiel nicht kennt, worum es geht?'],
+              beispiel: 'In meinem Spiel bist du eine kleine Rakete. Dein Ziel ist es, in 60 Sekunden möglichst viele Sterne zu sammeln. Schwierig wird es, weil Meteoriten durchs Bild fliegen.' },
+            { titel: '🦸 Die Spielfigur', schritte: [
+                '<strong>Zeichne</strong> deine Figur oder baue sie aus Formen zusammen.',
+                'Gib ihr einen <strong>Namen</strong>.',
+                'Zwei Fähigkeiten: <span class="satzanfang">Sie kann … und …</span>',
+                '<strong>Steuerung:</strong> Wie bewegt man sie – tippen, wischen, Pfeiltasten, iPad kippen?',
+                'Begründe eine Entscheidung: <span class="satzanfang">Ich habe … gewählt, weil …</span>'],
+              beispiel: 'Rakete „Rocky“ kann fliegen und kurz einen Turbo zünden. Steuerung: auf den Bildschirm tippen. Ich habe Tippen gewählt, weil man am iPad keine Pfeiltasten hat.' },
+            { titel: '🌍 Die Spielwelt', schritte: [
+                'Wo spielt dein Spiel? Ein Ort reicht.',
+                'Skizziere den <strong>Hintergrund</strong> oder füge ein passendes Bild ein.',
+                'Drei Wörter: Wie soll sich das Spiel <strong>anfühlen</strong>? (z. B. spannend, ruhig, lustig)',
+                'Entscheide: ein Bildschirm oder mehrere <strong>Level</strong>? Was ändert sich von Level zu Level?'],
+              beispiel: 'Weltraum, dunkelblau mit Planeten. Gefühl: spannend, schnell, bunt. Drei Level – in jedem kommen mehr Meteoriten.' },
+            { titel: '📜 Die Regeln', schritte: [
+                'Überschrift: <em>Die Regeln</em>',
+                'Schreib mindestens <strong>drei Regeln als WENN … DANN …</strong> – wie in der Werkstatt.',
+                'Eine Regel sagt, wie man <strong>Punkte bekommt</strong>.',
+                'Eine Regel sagt, wie man <strong>Punkte oder Leben verliert</strong>.',
+                'Eine Regel sagt, <strong>wann das Spiel endet</strong>.'],
+              beispiel: 'WENN Rocky einen Stern berührt → DANN +10 Punkte.<br>WENN Rocky einen Meteoriten berührt → DANN ein Leben weniger.<br>WENN alle 3 Leben weg sind → DANN ist das Spiel vorbei.' },
+            { titel: '⭐ Sammeln und Hindernisse', schritte: [
+                'Was kann man <strong>sammeln</strong>? Wie viele Punkte bringt jedes Ding?',
+                'Gibt es etwas <strong>Seltenes</strong>, das mehr wert ist? Wie oft taucht es auf?',
+                'Welche <strong>Hindernisse oder Gegner</strong> gibt es? Wie bewegen sie sich?',
+                'Füge zu jedem Ding eine kleine Skizze oder ein Emoji hinzu.'],
+              beispiel: '⭐ Stern: 10 Punkte · 🌟 Superstern (selten, alle 20 Sekunden): 50 Punkte · ☄️ Meteorit: fliegt schräg von oben nach unten.' },
+            { titel: '⚖️ Fesselnd, aber fair', schritte: [
+                'Wähle aus Schritt 8 <strong>zwei Mechaniken</strong>, die dein Spiel benutzt.',
+                'Zu jeder: <span class="satzanfang">Das ist fair, weil …</span> oder <span class="satzanfang">Das ist eher unfair, weil …</span>',
+                'Wie verdient dein Spiel <strong>Geld</strong>? Gratis mit Werbung, einmal kaufen oder In-App-Käufe?',
+                'Begründe: <span class="satzanfang">Ich habe mich für … entschieden, weil …</span>'],
+              beispiel: 'Fortschritt: Mit jedem Level wird Rocky schneller – fair, weil man es sich erspielt. Einmal kaufen für 1,99 €, keine Lootboxen – sonst gewinnt, wer Glück hat oder zahlt, statt wer gut spielt.' },
+            { titel: '🧠 Wie ich mein Spiel entwickelt habe', schritte: [
+                'Überschrift: <em>Wie ich mein Spiel entwickelt habe</em>',
+                '<span class="satzanfang">Meine wichtigste Entscheidung war …, weil …</span>',
+                '<span class="satzanfang">Eine Idee, die ich verworfen habe: …, weil …</span>',
+                '<span class="satzanfang">Wenn ich mehr Zeit hätte, würde ich noch …</span>',
+                'Letzte Zeile: <em>Danke fürs Zuhören!</em>'],
+              beispiel: 'Meine wichtigste Entscheidung war, Meteoriten einzubauen, weil das Spiel ohne Gefahr langweilig war. Verworfen habe ich eine Rangliste, weil sie Druck macht. Mit mehr Zeit würde ich noch Musik einbauen.' }
+        ];
+        const PARTNER = [
+            'Nach Folie 2 verstehe ich, worum es im Spiel geht.',
+            'Auf Folie 5 stehen mindestens drei Regeln als WENN … DANN …',
+            'Auf Folie 3, 7 und 8 steht jeweils mindestens ein „weil“.',
+            'Folie 7 sagt, ob das Spiel fair ist – mit Begründung.',
+            'Die Folien haben wenig Text und eigene Bilder oder Skizzen.'
+        ];
+
+        function initFolien() {
+            const box = document.getElementById('folien');
+            box.innerHTML = FOLIEN.map((f, i) => `
+                <div class="folie">
+                    <div>
+                        <div class="folie-kopf"><span class="folie-nr">Folie ${i + 1}</span><h3>${f.titel}</h3></div>
+                        ${f.schritte.map((s, k) => {
+                            const id = `f${i}-${k}`, on = !!S.checks[id];
+                            return `<label class="teilschritt ${on ? 'erledigt' : ''}"><input type="checkbox" data-id="${id}" ${on ? 'checked' : ''}><span>${s}</span></label>`;
+                        }).join('')}
+                        <div class="beispiel"><b>🚀 Beispiel „Sternenjäger“:</b> ${f.beispiel}</div>
+                    </div>
+                    <div class="notiz"><label for="n${i}">📝 Notizzettel (freiwillig)</label><textarea id="n${i}" data-n="${i}" placeholder="Ideen sammeln …"></textarea></div>
+                </div>`).join('');
+            box.querySelectorAll('input[data-id]').forEach(c => c.onchange = () => {
+                S.checks[c.dataset.id] = c.checked; c.closest('.teilschritt').classList.toggle('erledigt', c.checked); save();
+            });
+            box.querySelectorAll('textarea[data-n]').forEach(t => {
+                t.value = S.notes[t.dataset.n] || '';
+                t.oninput = () => { S.notes[t.dataset.n] = t.value; save(); };
+            });
+            const pc = document.getElementById('partnercheck');
+            pc.innerHTML = PARTNER.map((p, i) => `<label class="teilschritt"><input type="checkbox" data-pc="${i}" ${S.pc.includes(i) ? 'checked' : ''}><span>${p}</span></label>`).join('');
+            pc.querySelectorAll('input[data-pc]').forEach(c => c.onchange = () => {
+                const i = +c.dataset.pc; S.pc = S.pc.filter(x => x !== i); if (c.checked) S.pc.push(i); save();
+            });
+        }
+    </script>
+</body>
+</html>
