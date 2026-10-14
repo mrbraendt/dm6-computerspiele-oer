@@ -111,8 +111,6 @@
         .main-content {
             flex: 1;
             padding: 40px;
-            overflow-y: auto;
-            max-height: 800px;
         }
 
         .step-content {
@@ -282,6 +280,9 @@
             text-align: center;
         }
 
+        canvas { max-width: 100%; height: auto; }
+        h1 { overflow-wrap: anywhere; }
+
         #gameCanvas {
             background: #1a1a2e;
             border: 2px solid #667eea;
@@ -313,11 +314,11 @@
         }
 
         .button.secondary {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            background: linear-gradient(135deg, #c2185b 0%, #b71c1c 100%);
         }
 
         .button.success {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            background: linear-gradient(135deg, #0b5ed7 0%, #00798c 100%);
         }
 
         .info-box {
@@ -383,20 +384,18 @@
         }
 
         /* Virtuelle Steuerungstasten für Touch-Geräte */
+        /* Nur auf Touch-Geräten, im Seitenfluss direkt unter dem Spielfeld (verdeckt nichts) */
         .virtual-controls {
             display: none;
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1000;
             user-select: none;
-            pointer-events: none;
         }
 
-        .virtual-controls.active {
-            display: block;
-            pointer-events: all;
+        @media (pointer: coarse) {
+            .virtual-controls.active {
+                display: block;
+                width: max-content;
+                margin: 0 auto 20px;
+            }
         }
 
         .control-pad {
@@ -476,7 +475,6 @@
             
             .main-content {
                 padding: 30px;
-                max-height: calc(100vh - 200px);
             }
             
             .step-content h2 {
@@ -496,9 +494,6 @@
                 height: auto;
             }
             
-            .virtual-controls {
-                display: block;
-            }
         }
 
         @media (max-width: 768px) {
@@ -508,10 +503,13 @@
             .sidebar {
                 width: 100%;
             }
-            
-            .virtual-controls {
-                display: block;
-            }
+        }
+
+        @media (max-width: 500px) {
+            .header { padding: 20px 16px; }
+            .header h1 { font-size: 1.6em; }
+            .header p { font-size: 1em; }
+            .main-content { padding: 20px 16px; }
         }
 
         /* ===== Werkstatt, Aufgaben, Präsentation (Ergänzung 2026) ===== */
@@ -580,9 +578,12 @@
         .raster th, .raster td { border: 1px solid #dee2e6; padding: 10px; vertical-align: top; text-align: left; line-height: 1.5; }
         .raster th { background: #f0f4ff; color: #4c3a8a; }
         .raster td:first-child { font-weight: 700; width: 24%; }
+        @media (max-width: 700px) { .raster { display: block; overflow-x: auto; } .raster td, .raster th { min-width: 130px; } }
+        .reset-btn { display: block; width: 100%; margin-top: 16px; padding: 10px 12px; background: #fff; color: #6c757d; border: 1px solid #adb5bd; border-radius: 10px; font-size: .85em; cursor: pointer; }
+        .reset-btn:hover { color: #b71c1c; border-color: #b71c1c; }
         @media print {
             body { background: white; padding: 0; }
-            .sidebar, .header, .navigation-buttons, .virtual-controls { display: none !important; }
+            .sidebar, .header, .navigation-buttons, .virtual-controls, .reset-btn { display: none !important; }
             .step-content { display: none !important; }
             .step-content.active { display: block !important; }
             .main-content { max-height: none; overflow: visible; }
@@ -601,8 +602,8 @@
             .step-item { padding: 9px 14px; margin-bottom: 6px; font-size: .95em; }
             .main-content { max-height: none; overflow-y: auto; padding: 26px 36px 40px; }
             .step-content h2 { font-size: 1.8em; }
-            /* Steuerkreuz unten in der Seitenleiste statt über dem Text */
-            .virtual-controls { left: 157px; bottom: 22px; transform: translateX(-50%); }
+            /* Touch quer (z. B. iPad 1180 × 820): Steuerkreuz unten in der Seitenleiste, nicht über dem Inhalt */
+            @media (pointer: coarse) { .virtual-controls.active { position: fixed; left: 157px; bottom: 14px; transform: translateX(-50%); margin: 0; z-index: 10; } }
             .control-pad { width: 180px; height: 180px; gap: 8px; padding: 10px; }
             .control-btn { min-width: 48px; min-height: 48px; font-size: 1.7em; border-radius: 14px; }
         }
@@ -632,6 +633,7 @@
                     <li class="step-item" data-step="8">Schritt 9: Präsentation bauen</li>
                     <li class="step-item" data-step="9">Schritt 10: Präsentieren</li>
                 </ul>
+                <button type="button" class="reset-btn" onclick="neuBeginnen()">Neu beginnen (löscht Notizen auf diesem iPad)</button>
             </div>
 
             <div class="main-content">
@@ -989,7 +991,7 @@ zeichenfläche.fillRect(<span class="string" id="c-x">275</span>, <span class="s
                             <div><label class="schalter"><input type="checkbox" id="s-zeit" checked> Zeitgrenze (30 Sekunden)</label></div>
                             <div><label class="schalter"><input type="checkbox" id="s-hindernis"> Hindernis (kostet 20 Punkte)</label></div>
                         </div>
-                        <button class="button success" onclick="neuesSpiel()">▶ Neues Spiel</button>
+                        <button class="button success" onclick="neuesSpiel(true)">▶ Spiel starten</button>
                     </div>
 
                     <div class="game-canvas-container">
@@ -1149,9 +1151,11 @@ zeichenfläche.fillRect(<span class="string" id="c-x">275</span>, <span class="s
                 if (e.key.startsWith('Arrow') && currentStep >= 4 && currentStep <= 6 && !/INPUT|TEXTAREA/.test(document.activeElement.tagName)) e.preventDefault();
             });
             document.addEventListener('keyup', e => { keys[e.key] = false; });
+            document.getElementById('fullGameCanvas').addEventListener('pointerdown', () => { if (voll && !voll.gestartet) voll.gestartet = true; });
+            document.querySelectorAll('input[type=range]').forEach(r => r.addEventListener('pointerup', () => r.blur()));
             const leer = document.getElementById('gameCanvas').getContext('2d');
             leer.fillStyle = '#1a1a2e'; leer.fillRect(0, 0, 600, 400);
-            goToStep(Math.min(S.step || 0, totalSteps - 1));
+            goToStep(Math.min(S.step || 0, totalSteps - 1), true);
             requestAnimationFrame(loop);
         });
 
@@ -1174,7 +1178,7 @@ zeichenfläche.fillRect(<span class="string" id="c-x">275</span>, <span class="s
             document.querySelectorAll('.step-item').forEach(item => item.addEventListener('click', () => goToStep(parseInt(item.dataset.step))));
         }
 
-        function goToStep(step) {
+        function goToStep(step, ersterAufruf) {
             S.step = step; S.maxStep = Math.max(S.maxStep || 0, step); save();
             document.querySelectorAll('.step-content').forEach(c => c.classList.toggle('active', +c.dataset.step === step));
             document.querySelectorAll('.step-item').forEach(item => {
@@ -1184,13 +1188,22 @@ zeichenfläche.fillRect(<span class="string" id="c-x">275</span>, <span class="s
             });
             currentStep = step;
             document.getElementById('progressFill').style.width = ((step + 1) / totalSteps * 100) + '%';
-            const main = document.querySelector('.main-content'); if (main) main.scrollTop = 0;
+            const main = document.querySelector('.main-content');
+            if (main) {
+                main.scrollTop = 0;
+                if (!ersterAufruf && window.innerWidth < 1025) window.scrollTo({ top: Math.max(0, main.getBoundingClientRect().top + window.scrollY - 8), behavior: 'auto' });
+            }
             keys = {};
             document.querySelectorAll('.virtual-controls').forEach(c => c.classList.remove('active'));
             const ctrl = { 4: 'movementControls', 5: 'collectibleControls', 6: 'fullGameControls' }[step];
             if (ctrl) document.getElementById(ctrl).classList.add('active');
             if (step === 3) drawPlayer();
-            if (step === 6) neuesSpiel();
+            if (step === 6) neuesSpiel(false);
+        }
+        function neuBeginnen() {
+            if (!confirm('Wirklich neu beginnen? Alle Notizen und Haken auf diesem Gerät werden gelöscht.')) return;
+            try { localStorage.removeItem(KEY); } catch (e) {}
+            location.reload();
         }
         function nextStep() { if (currentStep < totalSteps - 1) goToStep(currentStep + 1); }
         function prevStep() { if (currentStep > 0) goToStep(currentStep - 1); }
@@ -1247,12 +1260,12 @@ zeichenfläche.fillRect(<span class="string" id="c-x">275</span>, <span class="s
             regler('speed', 'speed', () => setText('.t-speed', cfg.speed));
             regler('abstand', 'abstand', () => { setText('#t-abstand', cfg.abstand); setText('#c-abstand', cfg.abstand); });
             regler('punkte', 'punkte', () => { setText('#t-punkte', cfg.punkte); setText('#c-punkte', cfg.punkte); });
-            regler('sterne', 'sterne', neuesSpiel);
+            regler('sterne', 'sterne', () => neuesSpiel(false));
             const schalter = (id, key, after) => { const s = document.getElementById('s-' + id); s.onchange = () => { cfg[key] = s.checked; if (after) after(); }; };
             schalter('rand', 'rand', () => document.getElementById('block-rand').style.opacity = cfg.rand ? 1 : .35);
             schalter('zone', 'zone');
-            schalter('zeit', 'zeit', () => { document.getElementById('block-zeit').style.opacity = cfg.zeit ? 1 : .35; neuesSpiel(); });
-            schalter('hindernis', 'hindernis', () => { document.getElementById('block-hindernis').style.opacity = cfg.hindernis ? 1 : .35; neuesSpiel(); });
+            schalter('zeit', 'zeit', () => { document.getElementById('block-zeit').style.opacity = cfg.zeit ? 1 : .35; neuesSpiel(false); });
+            schalter('hindernis', 'hindernis', () => { document.getElementById('block-hindernis').style.opacity = cfg.hindernis ? 1 : .35; neuesSpiel(false); });
             document.getElementById('block-hindernis').style.opacity = .35;
         }
 
@@ -1289,11 +1302,13 @@ zeichenfläche.fillRect(<span class="string" id="c-x">275</span>, <span class="s
         const col = { x: 275, y: 175, star: { x: 450, y: 120, weg: false }, n: 0 };
         let voll = null, last = 0;
 
-        function bewegen(p, g, speed, rand) {
-            if (keys.ArrowRight) p.x += speed;
-            if (keys.ArrowLeft) p.x -= speed;
-            if (keys.ArrowUp) p.y -= speed;
-            if (keys.ArrowDown) p.y += speed;
+        // speed = Pixel pro Frame bei 60 Hz; mit dt (Sekunden) auf Zeit umgerechnet, damit 60 und 120 Hz gleich schnell sind
+        function bewegen(p, g, speed, rand, dt) {
+            const d = speed * 60 * dt;
+            if (keys.ArrowRight) p.x += d;
+            if (keys.ArrowLeft) p.x -= d;
+            if (keys.ArrowUp) p.y -= d;
+            if (keys.ArrowDown) p.y += d;
             if (rand) { p.x = Math.max(0, Math.min(p.x, 600 - g)); p.y = Math.max(0, Math.min(p.y, 400 - g)); }
         }
         function stern(ctx, x, y, r, farbe) {
@@ -1303,23 +1318,26 @@ zeichenfläche.fillRect(<span class="string" id="c-x">275</span>, <span class="s
         }
         const zufall = () => ({ x: 40 + Math.random() * 520, y: 40 + Math.random() * 320, weg: false });
 
-        function neuesSpiel() {
-            voll = { x: 275, y: 175, punkte: 0, zeit: 30, vorbei: false, sterne: Array.from({ length: cfg.sterne }, zufall),
+        // start=true: Runde beginnt sofort (Button). start=false: Spiel steht bereit und wartet auf die erste Eingabe.
+        function neuesSpiel(start) {
+            voll = { gestartet: !!start, x: 275, y: 175, punkte: 0, zeit: 30, vorbei: false, sterne: Array.from({ length: cfg.sterne }, zufall),
                      h: { x: 80, y: 60, vx: 2.4, vy: 1.8, sperre: 0 } };
             setText('#t-zeit', 30);
+            if (start) { const c = document.getElementById('fullGameCanvas'); if (c && c.scrollIntoView) c.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
         }
+        function eingabeAktiv() { return Object.keys(keys).some(k => k.startsWith('Arrow') && keys[k]) && !/INPUT|TEXTAREA/.test(document.activeElement.tagName); }
 
         function loop(t) {
             const dt = last ? Math.min(0.05, (t - last) / 1000) : 0; last = t;
             if (currentStep === 4) {
                 const ctx = document.getElementById('movementCanvas').getContext('2d');
-                bewegen(mv, 50, cfg.speed, cfg.rand);
+                bewegen(mv, 50, cfg.speed, cfg.rand, dt);
                 hintergrund(ctx); figur(ctx, mv.x, mv.y, 50, cfg.farbe); koordinaten(ctx, mv.x, mv.y);
                 if (mv.x > 600 || mv.x < -50 || mv.y > 400 || mv.y < -50) { ctx.fillStyle = '#fbbf24'; ctx.font = 'bold 18px sans-serif'; ctx.fillText('Figur außerhalb des Bildes!', 190, 30); }
             }
             if (currentStep === 5) {
                 const ctx = document.getElementById('collectibleCanvas').getContext('2d');
-                bewegen(col, 50, 5, true);
+                bewegen(col, 50, 5, true, dt);
                 const s = col.star, d = Math.hypot(col.x + 25 - s.x, col.y + 25 - s.y);
                 if (!s.weg && d < cfg.abstand) { s.weg = true; col.n++; setText('#hud-gesammelt', col.n); setTimeout(() => Object.assign(s, zufall()), 400); }
                 hintergrund(ctx);
@@ -1330,8 +1348,9 @@ zeichenfläche.fillRect(<span class="string" id="c-x">275</span>, <span class="s
             }
             if (currentStep === 6 && voll) {
                 const ctx = document.getElementById('fullGameCanvas').getContext('2d'), v = voll;
-                if (!v.vorbei) {
-                    bewegen(v, 50, 5, true);
+                if (!v.gestartet && eingabeAktiv()) v.gestartet = true;
+                if (v.gestartet && !v.vorbei) {
+                    bewegen(v, 50, 5, true, dt);
                     v.sterne.forEach(s => {
                         if (!s.weg && Math.hypot(v.x + 25 - s.x, v.y + 25 - s.y) < 35) { s.weg = true; v.punkte += cfg.punkte; setTimeout(() => Object.assign(s, zufall()), 800); }
                     });
@@ -1350,6 +1369,13 @@ zeichenfläche.fillRect(<span class="string" id="c-x">275</span>, <span class="s
                 ctx.fillStyle = 'white'; ctx.font = 'bold 22px Arial';
                 ctx.fillText('Punkte: ' + v.punkte, 10, 30);
                 if (cfg.zeit) ctx.fillText('Zeit: ' + Math.ceil(v.zeit), 480, 30);
+                if (!v.gestartet) {
+                    ctx.fillStyle = 'rgba(0,0,0,.65)'; ctx.fillRect(0, 0, 600, 400);
+                    ctx.fillStyle = '#ffd700'; ctx.font = 'bold 30px Arial'; ctx.textAlign = 'center';
+                    ctx.fillText('▶ Bereit?', 300, 175); ctx.fillStyle = 'white'; ctx.font = '20px Arial';
+                    ctx.fillText('Tippe aufs Spielfeld, drücke eine Pfeiltaste', 300, 215);
+                    ctx.fillText('oder den Knopf „Spiel starten“.', 300, 243); ctx.textAlign = 'left';
+                }
                 if (v.vorbei) {
                     ctx.fillStyle = 'rgba(0,0,0,.7)'; ctx.fillRect(0, 0, 600, 400);
                     ctx.fillStyle = '#ffd700'; ctx.font = 'bold 36px Arial'; ctx.textAlign = 'center';
